@@ -494,7 +494,7 @@ func (s *Server) setupRaft() error {
 	}
 
 	// Create a transport layer.
-	trans := raft.NewNetworkTransport(s.raftLayer, 3, 10*time.Second, s.config.LogOutput)
+	trans := raft.NewNetworkTransportWithServerAddressProvider(s.raftLayer, 3, 10*time.Second, s)
 	s.raftTransport = trans
 
 	// Make sure we set the LogOutput.
@@ -1054,6 +1054,15 @@ func (s *Server) ServerAddrs() map[string]string {
 		return nil
 	}
 	return ret
+}
+
+func (s *Server) ServerAddr(id raft.ServerID) raft.ServerAddress {
+	addr, err := s.router.GetServerAddressByID(s.config.Datacenter, string(id))
+	if err != nil {
+		s.logger.Println("[WARN] Unable to find address for raft server id %v", id)
+		return raft.ServerAddress("")
+	}
+	return raft.ServerAddress(addr)
 }
 
 // Atomically sets a readiness state flag when leadership is obtained, to indicate that server is past its barrier write
