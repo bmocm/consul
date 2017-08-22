@@ -217,6 +217,29 @@ func (s *HTTPServer) AgentLeave(resp http.ResponseWriter, req *http.Request) (in
 	return nil, s.agent.ShutdownAgent()
 }
 
+func (s *HTTPServer) AgentLeaveWAN(resp http.ResponseWriter, req *http.Request) (interface{}, error) {
+	if req.Method != "PUT" {
+		resp.WriteHeader(http.StatusMethodNotAllowed)
+		return nil, nil
+	}
+
+	// Fetch the ACL token, if any, and enforce agent policy.
+	var token string
+	s.parseToken(req, &token)
+	acl, err := s.agent.resolveToken(token)
+	if err != nil {
+		return nil, err
+	}
+	if acl != nil && !acl.AgentWrite(s.agent.config.NodeName) {
+		return nil, errPermissionDenied
+	}
+
+	if err := s.agent.LeaveWAN(); err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
 func (s *HTTPServer) AgentForceLeave(resp http.ResponseWriter, req *http.Request) (interface{}, error) {
 	// Fetch the ACL token, if any, and enforce agent policy.
 	var token string

@@ -856,6 +856,58 @@ func (s *Server) Leave() error {
 	return nil
 }
 
+// LeaveWAN is used by the server to leave its WAN pool
+// This leaves the servers in the LAN pool as is
+func (s *Server) LeaveWAN() error {
+	s.logger.Printf("[INFO] consul: server starting leave WAN")
+
+	// Check the number of known peers
+	/*numPeers, err := s.numPeers()
+	if err != nil {
+		s.logger.Printf("[ERR] consul: failed to check raft peers: %v", err)
+		return err
+	}
+
+	addr := s.raftTransport.LocalAddr()*/
+
+	/*// If we are the current leader, and we have any other peers (cluster has multiple
+	// servers), we should do a RemoveServer/RemovePeer to safely reduce the quorum size.
+	// If we are not the leader, then we should issue our leave intention and wait to be
+	// removed for some sane period of time.
+	isLeader := s.IsLeader()
+	if isLeader && numPeers > 1 {
+		minRaftProtocol, err := ServerMinRaftProtocol(s.serfLAN.Members())
+		if err != nil {
+			return err
+		}
+
+		if minRaftProtocol >= 2 && s.config.RaftConfig.ProtocolVersion >= 3 {
+			future := s.raft.RemoveServer(raft.ServerID(s.config.NodeID), 0, 0)
+			if err := future.Error(); err != nil {
+				s.logger.Printf("[ERR] consul: failed to remove ourself as raft peer: %v", err)
+			}
+		} else {
+			future := s.raft.RemovePeer(addr)
+			if err := future.Error(); err != nil {
+				s.logger.Printf("[ERR] consul: failed to remove ourself as raft peer: %v", err)
+			}
+		}
+	} */
+
+	// Leave the WAN pool
+	if s.serfWAN != nil {
+		if err := s.serfWAN.Leave(); err != nil {
+			s.logger.Printf("[ERR] consul: failed to leave WAN Serf cluster: %v", err)
+		}
+	}
+
+	if err := s.serfWAN.Shutdown(); err != nil {
+		s.logger.Printf("[ERR] consul: failed to shutdown WAN instance: %v", err)
+	}
+
+	return nil
+}
+
 // numPeers is used to check on the number of known peers, including the local
 // node.
 func (s *Server) numPeers() (int, error) {
